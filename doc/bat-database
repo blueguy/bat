@@ -1,0 +1,100 @@
+Using/updating the BAT database
+
+BAT comes with a mechanism to use a database backend. The default version of
+BAT only unpacks file systems and compressed files and runs a few simple checks
+on the leaf nodes of the unpacking process.
+
+In the paper "Finding Software License Violations Through Binary Code Clone
+Detection" by Hemel et. al. (ACM 978-1-4503-0574-7/11/05) presented at
+the Mining Software Repositories 2011 conference a method to use a database
+with strings extracted from source code was described. This functionality is
+currently being ported from a prototype to the production version of BAT.
+
+To give good results the database needs to be populated with as many packages
+as possible, from a cross cut of all of open source software, to prevent bias
+towards certain packages: if you only would have BusyBox in your database,
+everything would look like BusyBox.
+
+To populate the database you need to download and process packages. Be aware
+that this is a costly operation: a download of all source packages from Debian
+(which would give you a few versions for most packages) is about 60 GiB.
+Together with all of GNU, GNOME, most BusyBox version, and a few versions of
+KDE you have about 100 GiB of compressed source code archives. Processing
+these files (including licensing information) will take a long time and the
+resulting database will also be quite big.
+
+If you don't want to spend much time on downloading packages and processing
+these packages, please contact Tjaldur Software Governance Solutions for
+purchasing a copy of a fully preprocessed database at <info@tjaldur.nl>.
+
+  Crawling FTP mirrors
+
+In the directory 'crawlers' a sample crawler is given for downloading packages
+from the GNU project. The code is fairly straightforward. The script (written
+in Python) tries to intelligently download packages from a GNU FTP mirror,
+skipping packages that are in a blacklist (either parts of the filename, whole
+directories, or extensions) or that have already been downloaded.
+
+NOTE: please update the location of the GNU mirror in the configuration file!
+First of all: specifying a local mirror will result in faster downloads. It
+will also not put an unnecessary strain on the FTP mirror mentioned in that
+file!
+
+  Generating the package list
+
+The code and license extractor wants a description file of which packages to
+process. This file is hardcoded to "LIST" relative to the directory that
+contains all source archives. The reason we have a specific file is that some
+packages do not follow a consistent naming scheme.
+
+The file contains three values per line:
+
+* name
+* version
+* archivename
+
+separated by whitespace (spaces or tabs), for example:
+
+amarok	2.3.2	amarok-2.3.2.tar.bz2
+
+  Running the extraction program
+
+The extraction program (batchextractprogramstrings.py) uses regular expressions
+to extract all strings between double quotes from source code. These are the
+strings that are likely to end up in a binary. First the program files are
+processed using the C preprocessor to remove comments from the file. Then the
+regular expressions are applied to the remaining source code.
+
+The regular expressions that we use are not always correct and will sometimes
+extract the wrong parts, namely source code. Although they definitely could use
+a quality boost (please get in touch with us about that) we don't consider this
+a problem, since there are plenty of strings that are extracted correctly and
+that produce very good results.
+
+batchextractprogramstrings.py has a few options. The most important is whether
+or not to also extract licenses from the source code files. License extraction
+is done using the Ninka license scanner, with future support for Nomos from
+FOSSology being added. This option is disabled by default for a few reasons:
+
+* scanning licenses adds a significant performance penalty on scanning the code
+(about 1100% when scanning uClibc 0.9.30.1), even with many optimizations
+(deduplication) in place
+* there is currently no code that can make use of this information
+
+If you want to enable scanning license, you will have to install Ninka first
+and change a few hardcode pths in batchextractprogramstrings.py that point to
+Ninka.
+
+  Intelligently making sets of packages when using multiple machines
+
+One way to tackle the tackle the problem of having to process huge amounts of
+source code is to use multiple machines and later merge database. By adding a
+little bit of intelligence to preparing the sets of source packages you can
+save a lot of processing time. Many packages have duplicate files, especially
+if they are just different versions of the same package. A minor patch version
+could differ as much as one file. If the extractor already has seen a file, it
+will not scan it again, so it makes sense to have as many similar packages
+scanned on the same machine, for example all versions of a single package. If
+license scanning is enabled it makes sense to have as many packages from the
+same project scanned on the same machine, since coding styles often result in
+identical license statements, which the scanner already takes into account.
