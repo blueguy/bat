@@ -18,7 +18,7 @@ everything would look like BusyBox.
 To populate the database you need to download and process packages. Be aware
 that this is a costly operation: a download of all source packages from Debian
 (which would give you a few versions for most packages) is about 60 GiB.
-Together with all of GNU, GNOME, most BusyBox version, and a few versions of
+Together with all of GNU, GNOME, most BusyBox versions, and a few versions of
 KDE you have about 100 GiB of compressed source code archives. Processing
 these files (including licensing information) will take a long time and the
 resulting database will also be quite big.
@@ -56,6 +56,21 @@ The file contains three values per line:
 separated by whitespace (spaces or tabs), for example:
 
 amarok	2.3.2	amarok-2.3.2.tar.bz2
+
+There is a helper script (generatelist.py) to help generate the file. It is
+advised to manually inspect the file after generating it to ensure the
+correctness of the package names.
+
+Packages can have been renamed for a variety of reasons:
+
+* upstream decided to use a new name for archives (abiword archives were
+renamed from "abi-$VERSION.tar.gz" to "abiword-$VERSION.tar.gz")
+* a distribution renames packages to avoid clashes during installation and
+allow different versions to be installed next to eachother
+
+In these cases you need to change the names, otherwise the same package will be
+recorded in the database as different packages, which will confuse the rating
+algorithm.
 
   Running the extraction program
 
