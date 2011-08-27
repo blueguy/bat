@@ -76,15 +76,9 @@ algorithm.
 
 The extraction program (batchextractprogramstrings.py) uses regular expressions
 to extract all strings between double quotes from source code. These are the
-strings that are likely to end up in a binary. First the program files are
-processed using the C preprocessor to remove comments from the file. Then the
-regular expressions are applied to the remaining source code.
-
-The regular expressions that we use are not always correct and will sometimes
-extract the wrong parts, namely source code. Although they definitely could use
-a quality boost (please get in touch with us about that) we don't consider this
-a problem, since there are plenty of strings that are extracted correctly and
-that produce very good results.
+strings that are likely to end up in a binary. The strings are extracted using
+the xgettext program from GNU gettext. batchextractprogramstrings.py simply
+wraps around a call to xgettext and parses the results.
 
 batchextractprogramstrings.py has a few options. The most important is whether
 or not to also extract licenses from the source code files. License extraction
