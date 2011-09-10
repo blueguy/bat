@@ -8,20 +8,21 @@ In the paper "Finding Software License Violations Through Binary Code Clone
 Detection" by Hemel et. al. (ACM 978-1-4503-0574-7/11/05) presented at
 the Mining Software Repositories 2011 conference a method to use a database
 with strings extracted from source code was described. This functionality is
-currently being ported from a prototype to the production version of BAT.
+is available in the ranking module in the file "ranking.py". This code is not
+enabled by default.
 
-To give good results the database needs to be populated with as many packages
-as possible, from a cross cut of all of open source software, to prevent bias
-towards certain packages: if you only would have BusyBox in your database,
-everything would look like BusyBox.
+To give good results the database that is used by this code needs to be
+populated with as many packages as possible, from a cross cut of all of open
+source software, to prevent bias towards certain packages: if you only would
+have BusyBox in your database, everything would look like BusyBox.
 
 To populate the database you need to download and process packages. Be aware
-that this is a costly operation: a download of all source packages from Debian
-(which would give you a few versions for most packages) is about 60 GiB.
-Together with all of GNU, GNOME, most BusyBox versions, and a few versions of
-KDE you have about 100 GiB of compressed source code archives. Processing
+that this is a costly operation: a download of all source packages of a snapshot
+of Debian (which would give you a few versions for most packages) is about 60
+GiB. Together with all of GNU, GNOME, most BusyBox versions, and a few versions
+of KDE you have about 100 GiB of compressed source code archives. Processing
 these files (including licensing information) will take a long time and the
-resulting database will also be quite big.
+resulting database will also be quite big (at least around 20 GiB).
 
 If you don't want to spend much time on downloading packages and processing
 these packages, please contact Tjaldur Software Governance Solutions for
@@ -36,9 +37,8 @@ skipping packages that are in a blacklist (either parts of the filename, whole
 directories, or extensions) or that have already been downloaded.
 
 NOTE: please update the location of the GNU mirror in the configuration file!
-First of all: specifying a local mirror will result in faster downloads. It
-will also not put an unnecessary strain on the FTP mirror mentioned in that
-file!
+specifying a local mirror will result in faster downloads. It will also not put
+an unnecessary strain on the FTP mirror mentioned in that file!
 
   Generating the package list
 
@@ -47,15 +47,16 @@ process. This file is hardcoded to "LIST" relative to the directory that
 contains all source archives. The reason we have a specific file is that some
 packages do not follow a consistent naming scheme.
 
-The file contains three values per line:
+The file contains four values per line:
 
 * name
 * version
 * archivename
+* origin (or "unknown" if not specified)
 
 separated by whitespace (spaces or tabs), for example:
 
-amarok	2.3.2	amarok-2.3.2.tar.bz2
+amarok	2.3.2	amarok-2.3.2.tar.bz2	kde
 
 There is a helper script (generatelist.py) to help generate the file. It is
 advised to manually inspect the file after generating it to ensure the
@@ -68,31 +69,35 @@ renamed from "abi-$VERSION.tar.gz" to "abiword-$VERSION.tar.gz")
 * a distribution renames packages to avoid clashes during installation and
 allow different versions to be installed next to eachother
 
-In these cases you need to change the names, otherwise the same package will be
-recorded in the database as different packages, which will confuse the rating
-algorithm.
+In these cases you need to change the names, otherwise different versions of the
+same package will be recorded in the database as different packages, which will
+confuse the rating algorithm and cause it to give suboptimal results.
 
   Running the extraction program
 
-The extraction program (batchextractprogramstrings.py) uses regular expressions
-to extract all strings between double quotes from source code. These are the
-strings that are likely to end up in a binary. The strings are extracted using
-the xgettext program from GNU gettext. batchextractprogramstrings.py simply
-wraps around a call to xgettext and parses the results.
+The extraction program (batchextractprogramstrings.py) uses xgettext to extract
+all strings between double quotes from source code. These are the strings that
+are likely to end up in a binary. The batchextractprogramstrings.py script
+simply wraps around a call to xgettext and parses the results.
+
+$ python batchextractprogramstrings.py -f /path/to/directory/with/files -d /path/to/database
+
+  License scanning
 
 batchextractprogramstrings.py has a few options. The most important is whether
 or not to also extract licenses from the source code files. License extraction
 is done using the Ninka license scanner, with future support for Nomos from
-FOSSology being added. This option is disabled by default for a few reasons:
+FOSSology being added in the future. This option is disabled by default for a
+few reasons:
 
 * scanning licenses adds a significant performance penalty on scanning the code
 (about 1100% when scanning uClibc 0.9.30.1), even with many optimizations
 (deduplication) in place
 * there is currently no code that can make use of this information
 
-If you want to enable scanning license, you will have to install Ninka first
-and change a few hardcode pths in batchextractprogramstrings.py that point to
-Ninka.
+If you want to enable license scanning, you will have to install Ninka first
+and change a few hardcode paths in batchextractprogramstrings.py that point to
+the main Ninka script.
 
   Intelligently making sets of packages when using multiple machines
 
